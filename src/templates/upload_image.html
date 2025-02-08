@@ -3,15 +3,138 @@
   <head>
     <meta charset="utf-8">
     <title>アップロードされた画像</title>
+    <style>
+      .canvas-container {
+        position: relative;
+        display: inline-block;
+      }
+      #imageCanvas {
+        border: 1px solid #ccc;
+      }
+      .button-container {
+        margin: 10px 0;
+      }
+    </style>
   </head>
   <body>
-    <!-- 元のアップロードフォームを残す -->
     <form id="uploadForm" action="/upload" enctype="multipart/form-data" method="post">
       <input id="fileInput" name="file" type="file" accept="image/*" onchange="document.getElementById('uploadForm').submit()">
     </form>
     <p>アップロードされたファイル名: {{ file_name }}</p>
-    <!-- Base64エンコードされた画像を表示 -->
-    <img src="data:{{ content_type }};base64,{{ file_content }}" alt="uploaded image" />
-    <hr>
+    
+    <div class="button-container">
+      <button onclick="clearCanvas()">クリア</button>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="imageCanvas"></canvas>
+    </div>
+
+    <script>
+      const canvas = document.getElementById('imageCanvas');
+      const ctx = canvas.getContext('2d');
+      let isDrawing = false;
+      let startX = 0;
+      let startY = 0;
+      let currentX = 0;
+      let currentY = 0;
+      let imageData = null;
+      let selectedRect = null;
+
+      function updateCanvasWithImage(imgSrc) {
+        const newImg = new Image();
+        newImg.onload = function() {
+          canvas.width = newImg.width;
+          canvas.height = newImg.height;
+          ctx.drawImage(newImg, 0, 0);
+          imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          selectedRect = null;
+        };
+        newImg.src = imgSrc;
+      }
+
+      // 初期画像の読み込み
+      updateCanvasWithImage("data:{{ content_type }};base64,{{ file_content }}");
+
+      // マウスイベントの処理
+      canvas.addEventListener('mousedown', startDrawing);
+      canvas.addEventListener('mousemove', draw);
+      canvas.addEventListener('mouseup', stopDrawing);
+      canvas.addEventListener('mouseout', stopDrawing);
+
+      function startDrawing(e) {
+        isDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+        startX = e.clientX - rect.left;
+        startY = e.clientY - rect.top;
+        currentX = startX;
+        currentY = startY;
+        selectedRect = null;
+      }
+
+      function draw(e) {
+        if (!isDrawing) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        currentX = e.clientX - rect.left;
+        currentY = e.clientY - rect.top;
+        
+        ctx.putImageData(imageData, 0, 0);
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.rect(startX, startY, currentX - startX, currentY - startY);
+        ctx.stroke();
+      }
+
+      function stopDrawing() {
+        if (isDrawing) {
+          selectedRect = {
+            x: Math.min(startX, currentX),
+            y: Math.min(startY, currentY),
+            width: Math.abs(currentX - startX),
+            height: Math.abs(currentY - startY)
+          };
+          // bounding boxの枠を消去して元の画像を復元
+          ctx.putImageData(imageData, 0, 0);
+          // ぼかし処理を実行
+          applyBlur();
+        }
+        isDrawing = false;
+      }
+
+      function clearCanvas() {
+        ctx.putImageData(imageData, 0, 0);
+        selectedRect = null;
+      }
+
+      function applyBlur() {
+        if (!selectedRect) {
+          alert('ぼかす領域を選択してください');
+          return;
+        }
+
+        fetch('/apply_blur', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            image: canvas.toDataURL('image/png'),
+            rect: selectedRect
+          })
+        })
+        .then(response => response.blob())
+        .then(blob => {
+          const url = URL.createObjectURL(blob);
+          updateCanvasWithImage(url);
+          clearCanvas(); // ぼかし適用後にbounding boxを消去
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('ぼかし処理中にエラーが発生しました');
+        });
+      }
+    </script>
   </body>
 </html>

@@ -18,6 +18,8 @@ mangum==0.19.0
     # via image-blur (pyproject.toml)
 markupsafe==3.0.2
     # via jinja2
+pillow==11.1.0
+    # via image-blur (pyproject.toml)
 pip==25.0
     # via image-blur (pyproject.toml)
 pydantic==2.10.6
