@@ -20,6 +20,7 @@ async def index(request: Request):
 async def upload(request: Request, file: UploadFile = File(...)):
     # アップロードされたファイルの内容を読み込み
     contents = await file.read()
+    file_name = file.filename
 
     if file.content_type.startswith("image/"):
         # 画像の場合はBase64エンコードしてテンプレートに渡す
@@ -27,7 +28,8 @@ async def upload(request: Request, file: UploadFile = File(...)):
         return templates.TemplateResponse("upload_image.html", {
             "request": request,
             "file_content": encoded,
-            "content_type": file.content_type
+            "content_type": file.content_type,
+            "file_name": file_name
         })
     else:
         # 画像以外の場合はテキストとして表示（テキスト変換できない場合はエラーメッセージ）

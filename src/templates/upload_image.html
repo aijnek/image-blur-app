@@ -5,8 +5,13 @@
     <title>アップロードされた画像</title>
   </head>
   <body>
-    <h1>アップロードされた画像</h1>
+    <!-- 元のアップロードフォームを残す -->
+    <form id="uploadForm" action="/upload" enctype="multipart/form-data" method="post">
+      <input id="fileInput" name="file" type="file" accept="image/*" onchange="document.getElementById('uploadForm').submit()">
+    </form>
+    <p>アップロードされたファイル名: {{ file_name }}</p>
     <!-- Base64エンコードされた画像を表示 -->
     <img src="data:{{ content_type }};base64,{{ file_content }}" alt="uploaded image" />
+    <hr>
   </body>
 </html>

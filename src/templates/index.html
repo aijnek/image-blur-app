@@ -5,7 +5,6 @@
     <title>ファイルアップロード</title>
   </head>
   <body>
-    <h1>ファイルをアップロードしてください</h1>
     <!-- ファイル選択後、自動的にフォーム送信 -->
     <form id="uploadForm" action="/upload" enctype="multipart/form-data" method="post">
       <input id="fileInput" name="file" type="file" accept="image/*" onchange="document.getElementById('uploadForm').submit()">
