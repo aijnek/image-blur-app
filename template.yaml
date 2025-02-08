@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  FastAPI Image Blur App deployed on AWS Lambda
+
+Parameters:
+  StageName:
+    Type: String
+    Default: prod
+    Description: API Gateway のステージ名
+
+Globals:
+  Function:
+    Timeout: 30
+
+Resources:
+  MyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref StageName
+      BinaryMediaTypes:
+        - 'multipart/form-data'
+        - 'image/png'
+        - 'image/jpeg'
+        - 'image/gif'
+        - 'application/octet-stream'
+
+  FastApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.handler
+      Runtime: python3.13
+      CodeUri: src 
+      MemorySize: 512
+      Environment:
+        Variables:
+          STAGE: !Ref StageName
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+            RestApiId: !Ref MyApi
