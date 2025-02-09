@@ -1,6 +1,7 @@
 from fastapi import FastAPI, File, UploadFile, Request, Form
 from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from mangum import Mangum
 from PIL import Image, ImageFilter
 import base64
@@ -14,6 +15,7 @@ stage = os.environ.get("STAGE", "")
 root_path = f"/{stage}" if stage else ""
 
 app = FastAPI(root_path=root_path)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 @app.get("/", response_class=HTMLResponse)
