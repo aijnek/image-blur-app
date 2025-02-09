@@ -251,6 +251,14 @@
         <button class="btn btn-download" onclick="downloadImage()" id="downloadButton" disabled>
           <i class="bi bi-download"></i> 画像をダウンロード
         </button>
+        <select id="boxColorSelect" class="form-select ms-auto" style="width: auto;">
+          <option value="#FF0000">赤</option>
+          <option value="#FFFF00">黄色</option>
+          <option value="#00FFFF">シアン</option>
+          <option value="#FFFFFF">白</option>
+          <option value="#000000">黒</option>
+          <option value="#00FF00">緑</option>
+        </select>
       </div>
       <canvas id="imageCanvas"></canvas>
     </div>
@@ -356,8 +364,8 @@
           ctx.putImageData(imageData, 0, 0);
           
           if (isDrawing) {
-            // 赤い実線で描画
-            ctx.strokeStyle = '#FF0000';
+            // 選択された色で実線を描画
+            ctx.strokeStyle = document.getElementById('boxColorSelect').value;
             ctx.lineWidth = 2;
             ctx.setLineDash([]);
             ctx.beginPath();
