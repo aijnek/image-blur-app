@@ -10,11 +10,8 @@ import io
 import json
 from typing import Dict
 
-# 環境変数 STAGE が設定されていれば、root_path に利用する
-stage = os.environ.get("STAGE", "")
-root_path = f"/{stage}" if stage else ""
 
-app = FastAPI(root_path=root_path)
+app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
@@ -94,4 +91,5 @@ async def apply_blur(
         )
 
 # AWS Lambdaでの実行用にMangumハンドラを定義
-handler = Mangum(app)
+stage = os.environ.get("STAGE", "prod")
+handler = Mangum(app, api_gateway_base_path=f"/{stage}")
