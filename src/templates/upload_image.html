@@ -6,45 +6,125 @@
     <title>画像編集 - ぼかし処理ツール</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+      :root {
+        --primary-color: #4A90E2;
+        --secondary-color: #6C7A89;
+        --accent-color: #5C6BC0;
+        --hover-color: #357ABD;
+        --shadow-color: rgba(108, 122, 137, 0.15);
+      }
+
+      body {
+        background-color: #F8F9FA;
+      }
+
+      h1 {
+        color: var(--secondary-color);
+        font-weight: 600;
+      }
+
       .canvas-container {
         position: relative;
         display: inline-block;
         margin: 20px 0;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        border-radius: 4px;
+        box-shadow: 0 4px 12px var(--shadow-color);
+        border-radius: 8px;
         overflow: hidden;
+        background: white;
       }
+
       #imageCanvas {
         display: block;
         max-width: 100%;
         height: auto;
       }
+
       .button-container {
         margin: 20px 0;
       }
+
       .file-upload {
         position: relative;
         display: inline-block;
         margin: 20px 0;
       }
+
       .file-upload-label {
         display: inline-block;
-        padding: 10px 20px;
-        background: #007bff;
+        padding: 12px 24px;
+        background: var(--primary-color);
         color: white;
-        border-radius: 4px;
+        border-radius: 6px;
         cursor: pointer;
-        transition: background 0.3s;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        box-shadow: 0 2px 6px var(--shadow-color);
       }
+
       .file-upload-label:hover {
-        background: #0056b3;
+        background: var(--hover-color);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px var(--shadow-color);
       }
+
       .file-upload input[type="file"] {
         position: absolute;
         left: 0;
         top: 0;
         opacity: 0;
         cursor: pointer;
+      }
+
+      .btn {
+        padding: 10px 20px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 6px var(--shadow-color);
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px var(--shadow-color);
+      }
+
+      .btn-action {
+        background-color: var(--secondary-color);
+        border: none;
+        color: white;
+      }
+
+      .btn-action:hover {
+        background-color: #5B6978;
+        color: white;
+      }
+
+      .btn-undo {
+        background-color: var(--accent-color);
+        border: none;
+        color: white;
+      }
+
+      .btn-undo:hover {
+        background-color: #4A5BA9;
+        color: white;
+      }
+
+      .btn-download {
+        background-color: var(--primary-color);
+        border: none;
+        color: white;
+      }
+
+      .btn-download:hover {
+        background-color: var(--hover-color);
+        color: white;
+      }
+
+      .alert-info {
+        background-color: rgba(74, 144, 226, 0.1);
+        border-color: rgba(74, 144, 226, 0.2);
+        color: var(--primary-color);
+        border-radius: 6px;
       }
     </style>
   </head>
@@ -65,13 +145,13 @@
     </div>
     
     <div class="button-container">
-      <button class="btn btn-secondary me-2" onclick="clearCanvas()">
+      <button class="btn btn-action me-2" onclick="clearCanvas()" id="clearButton" disabled>
         <i class="bi bi-arrow-counterclockwise"></i> クリア
       </button>
-      <button class="btn btn-warning me-2" onclick="undoLastAction()" id="undoButton" disabled>
+      <button class="btn btn-undo me-2" onclick="undoLastAction()" id="undoButton" disabled>
         <i class="bi bi-arrow-left"></i> 1つ前に戻す
       </button>
-      <button class="btn btn-primary" onclick="downloadImage()" id="downloadButton" disabled>
+      <button class="btn btn-download" onclick="downloadImage()" id="downloadButton" disabled>
         <i class="bi bi-download"></i> 画像をダウンロード
       </button>
     </div>
@@ -106,9 +186,9 @@
             if (isInitialLoad) {
               originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
               imageHistory = [ctx.getImageData(0, 0, canvas.width, canvas.height)];
+              document.getElementById('clearButton').disabled = true;
             }
             selectedRect = null;
-            // スケールを計算
             scale = canvas.width / canvas.getBoundingClientRect().width;
           };
           newImg.src = imgSrc;
@@ -153,7 +233,7 @@
           ctx.putImageData(imageData, 0, 0);
           
           if (isDrawing) {
-            ctx.strokeStyle = '#007bff';
+            ctx.strokeStyle = 'var(--primary-color)';
             ctx.lineWidth = 2;
             ctx.setLineDash([5, 5]);
             ctx.beginPath();
@@ -190,6 +270,7 @@
             imageHistory = [];
             document.getElementById('undoButton').disabled = true;
             document.getElementById('downloadButton').disabled = true;
+            document.getElementById('clearButton').disabled = true;
           }
         }
 
@@ -202,6 +283,7 @@
             if (imageHistory.length === 0) {
               document.getElementById('undoButton').disabled = true;
               document.getElementById('downloadButton').disabled = true;
+              document.getElementById('clearButton').disabled = true;
             }
           }
         }
@@ -241,6 +323,7 @@
                 imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 document.getElementById('undoButton').disabled = false;
                 document.getElementById('downloadButton').disabled = false;
+                document.getElementById('clearButton').disabled = false;
               };
               blurredImg.src = url;
             })
@@ -270,7 +353,6 @@
           document.body.removeChild(link);
         }
 
-        // ウィンドウリサイズ時にスケールを更新
         window.addEventListener('resize', function() {
           scale = canvas.width / canvas.getBoundingClientRect().width;
         });
