@@ -36,26 +36,40 @@ async def upload(request: Request, file: UploadFile = File(...)):
             "file_name": file_name
         })
     else:
-        # 画像以外の場合はテキストとして表示
-        try:
-            text_content = contents.decode("utf-8")
-        except UnicodeDecodeError:
-            text_content = "バイナリファイルのためテキスト表示できません。"
-        return templates.TemplateResponse("upload_text.html", {
+        return templates.TemplateResponse("upload_error.html", {
             "request": request,
-            "file_text": text_content
         })
 
 @app.post("/apply_blur")
 async def apply_blur(
     image: UploadFile = File(...)
 ):
+    if not image.content_type.startswith('image/'):
+        return Response(
+            content=json.dumps({
+                "error": "画像ファイルのみアップロード可能です。",
+                "code": "INVALID_FILE_TYPE"
+            }),
+            media_type="application/json",
+            status_code=400
+        )
+
     try:
         # 画像データを読み込み
         image_bytes = await image.read()
         
         # 画像を開く
-        img = Image.open(io.BytesIO(image_bytes))
+        try:
+            img = Image.open(io.BytesIO(image_bytes))
+        except Exception:
+            return Response(
+                content=json.dumps({
+                    "error": "無効な画像ファイルです。",
+                    "code": "INVALID_IMAGE"
+                }),
+                media_type="application/json",
+                status_code=400
+            )
         
         # ガウシアンブラーを適用
         blurred_img = img.filter(ImageFilter.GaussianBlur(radius=10))
@@ -68,7 +82,14 @@ async def apply_blur(
         return Response(content=img_byte_arr, media_type="image/png")
     except Exception as e:
         print(f"Error in apply_blur: {str(e)}")
-        raise
+        return Response(
+            content=json.dumps({
+                "error": "画像の処理中にエラーが発生しました。",
+                "code": "PROCESSING_ERROR"
+            }),
+            media_type="application/json",
+            status_code=500
+        )
 
 # AWS Lambdaでの実行用にMangumハンドラを定義
 handler = Mangum(app)
