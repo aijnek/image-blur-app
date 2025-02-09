@@ -39,22 +39,26 @@
       let currentX = 0;
       let currentY = 0;
       let imageData = null;
+      let originalImageData = null;
       let selectedRect = null;
 
-      function updateCanvasWithImage(imgSrc) {
+      function updateCanvasWithImage(imgSrc, isInitialLoad = false) {
         const newImg = new Image();
         newImg.onload = function() {
           canvas.width = newImg.width;
           canvas.height = newImg.height;
           ctx.drawImage(newImg, 0, 0);
           imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          if (isInitialLoad) {
+            originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          }
           selectedRect = null;
         };
         newImg.src = imgSrc;
       }
 
       // 初期画像の読み込み
-      updateCanvasWithImage("data:{{ content_type }};base64,{{ file_content }}");
+      updateCanvasWithImage("data:{{ content_type }};base64,{{ file_content }}", true);
 
       // マウスイベントの処理
       canvas.addEventListener('mousedown', startDrawing);
@@ -79,12 +83,17 @@
         currentX = e.clientX - rect.left;
         currentY = e.clientY - rect.top;
         
+        // 前回の描画をクリア
         ctx.putImageData(imageData, 0, 0);
-        ctx.strokeStyle = 'red';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.rect(startX, startY, currentX - startX, currentY - startY);
-        ctx.stroke();
+        
+        // ドラッグ中のみ選択範囲を表示
+        if (isDrawing) {
+          ctx.strokeStyle = 'red';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.rect(startX, startY, currentX - startX, currentY - startY);
+          ctx.stroke();
+        }
       }
 
       function stopDrawing() {
@@ -95,17 +104,24 @@
             width: Math.abs(currentX - startX),
             height: Math.abs(currentY - startY)
           };
-          // bounding boxの枠を消去して元の画像を復元
+          
+          // 選択範囲の枠を消す
           ctx.putImageData(imageData, 0, 0);
-          // ぼかし処理を実行
-          applyBlur();
+          
+          // 選択範囲が有効な場合のみブラー処理を実行
+          if (selectedRect.width > 0 && selectedRect.height > 0) {
+            applyBlur();
+          }
         }
         isDrawing = false;
       }
 
       function clearCanvas() {
-        ctx.putImageData(imageData, 0, 0);
-        selectedRect = null;
+        if (originalImageData) {
+          ctx.putImageData(originalImageData, 0, 0);
+          imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          selectedRect = null;
+        }
       }
 
       function applyBlur() {
@@ -114,26 +130,44 @@
           return;
         }
 
-        fetch('/apply_blur', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            image: canvas.toDataURL('image/png'),
-            rect: selectedRect
+        // 選択領域のみを切り出し
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = selectedRect.width;
+        tempCanvas.height = selectedRect.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(canvas,
+          selectedRect.x, selectedRect.y, selectedRect.width, selectedRect.height,
+          0, 0, selectedRect.width, selectedRect.height
+        );
+
+        // 切り出した領域のみをBlob形式で送信
+        tempCanvas.toBlob(function(blob) {
+          const formData = new FormData();
+          formData.append('image', blob);
+
+          fetch('/apply_blur', {
+            method: 'POST',
+            body: formData
           })
-        })
-        .then(response => response.blob())
-        .then(blob => {
-          const url = URL.createObjectURL(blob);
-          updateCanvasWithImage(url);
-          clearCanvas(); // ぼかし適用後にbounding boxを消去
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          alert('ぼかし処理中にエラーが発生しました');
-        });
+          .then(response => response.blob())
+          .then(blob => {
+            const url = URL.createObjectURL(blob);
+            const blurredImg = new Image();
+            blurredImg.onload = function() {
+              // 元の画像データを復元
+              ctx.putImageData(imageData, 0, 0);
+              // ブラー処理された領域を貼り付け
+              ctx.drawImage(blurredImg, selectedRect.x, selectedRect.y);
+              // 現在の状態を保存
+              imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            };
+            blurredImg.src = url;
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            alert('ぼかし処理中にエラーが発生しました');
+          });
+        }, 'image/png');
       }
     </script>
   </body>

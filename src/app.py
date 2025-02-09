@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, Request
+from fastapi import FastAPI, File, UploadFile, Request, Form
 from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from mangum import Mangum
@@ -6,12 +6,8 @@ from PIL import Image, ImageFilter
 import base64
 import os
 import io
-from pydantic import BaseModel
+import json
 from typing import Dict
-
-class BlurRequest(BaseModel):
-    image: str
-    rect: Dict[str, int]
 
 # 環境変数 STAGE が設定されていれば、root_path に利用する
 stage = os.environ.get("STAGE", "")
@@ -51,32 +47,28 @@ async def upload(request: Request, file: UploadFile = File(...)):
         })
 
 @app.post("/apply_blur")
-async def apply_blur(blur_request: BlurRequest):
-    # Base64画像データをデコード
-    image_data = blur_request.image.split(',')[1]
-    image_bytes = base64.b64decode(image_data)
-    
-    # PILイメージとして開く
-    img = Image.open(io.BytesIO(image_bytes))
-    
-    # 選択された領域を切り出し
-    rect = blur_request.rect
-    region = img.crop((rect['x'], rect['y'], 
-                      rect['x'] + rect['width'], 
-                      rect['y'] + rect['height']))
-    
-    # ガウシアンブラーを適用
-    blurred_region = region.filter(ImageFilter.GaussianBlur(radius=10))
-    
-    # ブラー処理した領域を元の画像に貼り付け
-    img.paste(blurred_region, (rect['x'], rect['y']))
-    
-    # 画像をバイトデータとして保存
-    img_byte_arr = io.BytesIO()
-    img.save(img_byte_arr, format='PNG')
-    img_byte_arr = img_byte_arr.getvalue()
-    
-    return Response(content=img_byte_arr, media_type="image/png")
+async def apply_blur(
+    image: UploadFile = File(...)
+):
+    try:
+        # 画像データを読み込み
+        image_bytes = await image.read()
+        
+        # 画像を開く
+        img = Image.open(io.BytesIO(image_bytes))
+        
+        # ガウシアンブラーを適用
+        blurred_img = img.filter(ImageFilter.GaussianBlur(radius=10))
+        
+        # 画像をバイトデータとして保存
+        img_byte_arr = io.BytesIO()
+        blurred_img.save(img_byte_arr, format='PNG')
+        img_byte_arr = img_byte_arr.getvalue()
+        
+        return Response(content=img_byte_arr, media_type="image/png")
+    except Exception as e:
+        print(f"Error in apply_blur: {str(e)}")
+        raise
 
 # AWS Lambdaでの実行用にMangumハンドラを定義
 handler = Mangum(app)
