@@ -24,6 +24,8 @@
     
     <div class="button-container">
       <button onclick="clearCanvas()">クリア</button>
+      <button onclick="undoLastAction()" id="undoButton" disabled>1つ前に戻す</button>
+      <button onclick="downloadImage()" id="downloadButton" disabled>画像をダウンロード</button>
     </div>
 
     <div class="canvas-container">
@@ -41,6 +43,7 @@
       let imageData = null;
       let originalImageData = null;
       let selectedRect = null;
+      let imageHistory = []; // 画像の状態履歴を保存する配列
 
       function updateCanvasWithImage(imgSrc, isInitialLoad = false) {
         const newImg = new Image();
@@ -51,6 +54,8 @@
           imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           if (isInitialLoad) {
             originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            // 初期状態を履歴に追加
+            imageHistory = [ctx.getImageData(0, 0, canvas.width, canvas.height)];
           }
           selectedRect = null;
         };
@@ -121,6 +126,27 @@
           ctx.putImageData(originalImageData, 0, 0);
           imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           selectedRect = null;
+          
+          // 履歴をリセット
+          imageHistory = [];
+          // Undoボタンとダウンロードボタンを無効化
+          document.getElementById('undoButton').disabled = true;
+          document.getElementById('downloadButton').disabled = true;
+        }
+      }
+
+      function undoLastAction() {
+        if (imageHistory.length > 0) {
+          // 履歴から最後の状態を取得
+          const lastState = imageHistory.pop();
+          ctx.putImageData(lastState, 0, 0);
+          imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          
+          // 履歴が空になったらUndoボタンとダウンロードボタンを無効化
+          if (imageHistory.length === 0) {
+            document.getElementById('undoButton').disabled = true;
+            document.getElementById('downloadButton').disabled = true;
+          }
         }
       }
 
@@ -129,6 +155,9 @@
           alert('ぼかす領域を選択してください');
           return;
         }
+
+        // 現在の状態を履歴に追加
+        imageHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
 
         // 選択領域のみを切り出し
         const tempCanvas = document.createElement('canvas');
@@ -160,14 +189,41 @@
               ctx.drawImage(blurredImg, selectedRect.x, selectedRect.y);
               // 現在の状態を保存
               imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              // Undoボタンとダウンロードボタンを有効化
+              document.getElementById('undoButton').disabled = false;
+              document.getElementById('downloadButton').disabled = false;
             };
             blurredImg.src = url;
           })
           .catch(error => {
             console.error('Error:', error);
             alert('ぼかし処理中にエラーが発生しました');
+            // エラー時は履歴から削除
+            imageHistory.pop();
           });
         }, 'image/png');
+      }
+
+      function downloadImage() {
+        // キャンバスの内容をデータURLとして取得
+        const dataURL = canvas.toDataURL('image/png');
+        
+        // ファイル名を生成（example.jpg → example_blurred.jpg）
+        const originalName = '{{ file_name }}';
+        const lastDotIndex = originalName.lastIndexOf('.');
+        const newFileName = lastDotIndex !== -1
+          ? originalName.substring(0, lastDotIndex) + '_blurred' + originalName.substring(lastDotIndex)
+          : originalName + '_blurred';
+        
+        // ダウンロード用のリンクを作成
+        const link = document.createElement('a');
+        link.download = newFileName;
+        link.href = dataURL;
+        
+        // リンクをクリックしてダウンロードを開始
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       }
     </script>
   </body>
