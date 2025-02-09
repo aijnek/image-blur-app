@@ -196,6 +196,15 @@
         margin-bottom: 0;
       }
 
+      /* 処理中の表示 */
+      .processing-indicator {
+        display: none;
+        color: var(--secondary-color);
+        font-size: 0.8rem;
+        margin-left: 10px;
+        align-items: center;
+      }
+
       /* カスタム色選択メニュー */
       .color-select-container {
         position: relative;
@@ -310,6 +319,7 @@
         <button class="btn btn-download" onclick="downloadImage()" id="downloadButton" disabled>
           <i class="bi bi-download"></i> 画像をダウンロード
         </button>
+        <div class="processing-indicator" id="processingIndicator">処理中...</div>
         <div class="color-select-container">
           <div class="color-select-button" onclick="toggleColorDropdown()">
             <div class="color-sample" id="selectedColorSample"></div>
@@ -536,6 +546,9 @@
             0, 0, selectedRect.width, selectedRect.height
           );
 
+          const processingIndicator = document.getElementById('processingIndicator');
+          processingIndicator.style.display = 'inline-flex';
+
           tempCanvas.toBlob(function(blob) {
             const formData = new FormData();
             formData.append('image', blob);
@@ -562,6 +575,7 @@
                 document.getElementById('undoButton').disabled = false;
                 document.getElementById('downloadButton').disabled = false;
                 document.getElementById('clearButton').disabled = false;
+                processingIndicator.style.display = 'none';
               };
               blurredImg.src = url;
             })
@@ -569,6 +583,7 @@
               console.error('Error:', error);
               showError(error.message);
               imageHistory.pop();
+              processingIndicator.style.display = 'none';
             });
           }, 'image/png');
         }
