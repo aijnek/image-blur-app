@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>画像編集 - ぼかし処理ツール</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
     <style>
       :root {
         --primary-color: #4A90E2;
@@ -25,12 +26,13 @@
 
       .canvas-container {
         position: relative;
-        display: inline-block;
+        display: block;
         margin: 20px 0;
         box-shadow: 0 4px 12px var(--shadow-color);
         border-radius: 8px;
         overflow: hidden;
         background: white;
+        width: fit-content;
       }
 
       #imageCanvas {
@@ -40,7 +42,23 @@
       }
 
       .button-container {
-        margin: 20px 0;
+        margin: 0;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 10px;
+        padding: 10px 15px;
+        background-color: #f8f9fa;
+        width: 100%;
+        position: static;
+        box-sizing: border-box;
+      }
+
+      .button-container button {
+        margin: 0;
+        flex-shrink: 0;
       }
 
       .file-upload {
@@ -126,37 +144,114 @@
         color: var(--primary-color);
         border-radius: 6px;
       }
+
+      .usage-guide {
+        border: 1px solid rgba(74, 144, 226, 0.15);
+        border-radius: 6px;
+        overflow: hidden;
+        font-size: 0.9em;
+      }
+
+      .usage-header {
+        background-color: rgba(74, 144, 226, 0.05);
+        padding: 8px 15px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .usage-header:hover {
+        background-color: rgba(74, 144, 226, 0.1);
+      }
+
+      .usage-header h5 {
+        color: var(--primary-color);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 1em;
+      }
+
+      .usage-body {
+        padding: 12px 15px;
+        background-color: white;
+      }
+
+      .usage-body ol {
+        padding-left: 18px;
+        margin-bottom: 0;
+      }
+
+      .usage-body ul {
+        padding-left: 18px;
+        margin-top: 5px;
+      }
+
+      .usage-body li {
+        margin-bottom: 5px;
+        line-height: 1.4;
+      }
+
+      .usage-body li:last-child {
+        margin-bottom: 0;
+      }
     </style>
   </head>
   <body class="container py-4">
     <h1 class="mb-4">画像ぼかしツール</h1>
 
-    <form id="uploadForm" action="/upload" enctype="multipart/form-data" method="post">
-      <div class="file-upload">
-        <label class="file-upload-label">
-          画像を選択
-          <input id="fileInput" name="file" type="file" accept="image/*" onchange="document.getElementById('uploadForm').submit()">
-        </label>
+    <div class="usage-guide mb-4">
+      <div class="usage-header" data-bs-toggle="collapse" data-bs-target="#usageContent" aria-expanded="false" aria-controls="usageContent">
+        <h5 class="mb-0">
+          <i class="bi bi-info-circle me-2"></i>使い方
+          <i class="bi bi-chevron-down float-end"></i>
+        </h5>
       </div>
-    </form>
+      <div class="collapse" id="usageContent">
+        <div class="usage-body">
+          <ol>
+            <li>「画像を選択」ボタンをクリックして、編集したい画像をアップロードします。</li>
+            <li>画像上でマウスをドラッグして、ぼかしを適用したい範囲を選択します。</li>
+            <li>選択した範囲に自動的にぼかし処理が適用されます。</li>
+            <li>必要に応じて以下の操作を行えます：
+              <ul>
+                <li>「1つ前に戻す」: 直前のぼかし処理を取り消します</li>
+                <li>「クリア」: すべてのぼかし処理をリセットします</li>
+                <li>「画像をダウンロード」: 編集した画像を保存します</li>
+              </ul>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
 
-    <div class="alert alert-info" role="alert">
-      アップロードされたファイル: {{ file_name }}
+    <div class="d-flex align-items-center">
+      <form id="uploadForm" action="/upload" enctype="multipart/form-data" method="post">
+        <div class="file-upload">
+          <label class="file-upload-label">
+            画像を選択
+            <input id="fileInput" name="file" type="file" accept="image/*" onchange="document.getElementById('uploadForm').submit()">
+          </label>
+        </div>
+      </form>
+
+      <div class="alert alert-info mb-0 ms-3" role="alert" style="background: none; border: none;">
+        アップロードされたファイル: {{ file_name }}
+      </div>
     </div>
     
-    <div class="button-container">
-      <button class="btn btn-action me-2" onclick="clearCanvas()" id="clearButton" disabled>
-        <i class="bi bi-arrow-counterclockwise"></i> クリア
-      </button>
-      <button class="btn btn-undo me-2" onclick="undoLastAction()" id="undoButton" disabled>
-        <i class="bi bi-arrow-left"></i> 1つ前に戻す
-      </button>
-      <button class="btn btn-download" onclick="downloadImage()" id="downloadButton" disabled>
-        <i class="bi bi-download"></i> 画像をダウンロード
-      </button>
-    </div>
-
     <div class="canvas-container">
+      <div class="d-flex gap-2 p-2 bg-light border-bottom">
+        <button class="btn btn-action" onclick="clearCanvas()" id="clearButton" disabled>
+          <i class="bi bi-arrow-counterclockwise"></i> クリア
+        </button>
+        <button class="btn btn-undo" onclick="undoLastAction()" id="undoButton" disabled>
+          <i class="bi bi-arrow-left"></i> 1つ前に戻す
+        </button>
+        <button class="btn btn-download" onclick="downloadImage()" id="downloadButton" disabled>
+          <i class="bi bi-download"></i> 画像をダウンロード
+        </button>
+      </div>
       <canvas id="imageCanvas"></canvas>
     </div>
 

@@ -83,6 +83,24 @@
         color: var(--accent-color);
         font-weight: 600;
       }
+
+      .instructions ul {
+        padding-left: 20px;
+        margin-top: 10px;
+        list-style-type: disc;
+      }
+
+      .instructions ul li {
+        margin-bottom: 8px;
+      }
+
+      .instructions ul li:last-child {
+        margin-bottom: 0;
+      }
+
+      .instructions ul li::marker {
+        color: var(--primary-color);
+      }
     </style>
   </head>
   <body class="container py-4">
@@ -91,11 +109,16 @@
     <div class="instructions">
       <h5>使い方</h5>
       <ol>
-        <li>画像をアップロードします</li>
-        <li>ぼかしたい部分をドラッグして選択します</li>
-        <li>選択した部分が自動的にぼかし処理されます</li>
-        <li>必要に応じて「1つ前に戻す」で操作を取り消せます</li>
-        <li>完成したら「画像をダウンロード」で保存できます</li>
+        <li>「画像を選択」ボタンをクリックして、編集したい画像をアップロードします。</li>
+        <li>画像上でマウスをドラッグして、ぼかしを適用したい範囲を選択します。</li>
+        <li>選択した範囲に自動的にぼかし処理が適用されます。</li>
+        <li>必要に応じて以下の操作を行えます：
+          <ul>
+            <li>「1つ前に戻す」: 直前のぼかし処理を取り消します</li>
+            <li>「クリア」: すべてのぼかし処理をリセットします</li>
+            <li>「画像をダウンロード」: 編集した画像を保存します</li>
+          </ul>
+        </li>
       </ol>
     </div>
 
