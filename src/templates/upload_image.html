@@ -195,6 +195,65 @@
       .usage-body li:last-child {
         margin-bottom: 0;
       }
+
+      /* カスタム色選択メニュー */
+      .color-select-container {
+        position: relative;
+        margin-left: auto;
+      }
+
+      .color-select-button {
+        display: flex;
+        align-items: center;
+        padding: 4px;
+        background: white;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        cursor: pointer;
+        min-width: 40px;
+      }
+
+      .color-sample {
+        width: 32px;
+        height: 32px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+
+      .color-select-dropdown {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: 4px;
+        background: white;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        z-index: 1000;
+        display: none;
+        padding: 4px;
+        width: 150px;
+      }
+
+      .color-select-dropdown.show {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+      }
+
+      .color-option {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px;
+        cursor: pointer;
+        border-radius: 3px;
+        transition: background-color 0.2s;
+      }
+
+      .color-option:hover {
+        background-color: #f8f9fa;
+      }
     </style>
   </head>
   <body class="container py-4">
@@ -251,14 +310,31 @@
         <button class="btn btn-download" onclick="downloadImage()" id="downloadButton" disabled>
           <i class="bi bi-download"></i> 画像をダウンロード
         </button>
-        <select id="boxColorSelect" class="form-select ms-auto" style="width: auto;">
-          <option value="#FF0000">赤</option>
-          <option value="#FFFF00">黄色</option>
-          <option value="#00FFFF">シアン</option>
-          <option value="#FFFFFF">白</option>
-          <option value="#000000">黒</option>
-          <option value="#00FF00">緑</option>
-        </select>
+        <div class="color-select-container">
+          <div class="color-select-button" onclick="toggleColorDropdown()">
+            <div class="color-sample" id="selectedColorSample"></div>
+          </div>
+          <div class="color-select-dropdown" id="colorDropdown">
+            <div class="color-option" onclick="selectColor('#FF0000')">
+              <div class="color-sample" style="background-color: #FF0000;"></div>
+            </div>
+            <div class="color-option" onclick="selectColor('#FFFF00')">
+              <div class="color-sample" style="background-color: #FFFF00;"></div>
+            </div>
+            <div class="color-option" onclick="selectColor('#00FFFF')">
+              <div class="color-sample" style="background-color: #00FFFF;"></div>
+            </div>
+            <div class="color-option" onclick="selectColor('#FFFFFF')">
+              <div class="color-sample" style="background-color: #FFFFFF;"></div>
+            </div>
+            <div class="color-option" onclick="selectColor('#000000')">
+              <div class="color-sample" style="background-color: #000000;"></div>
+            </div>
+            <div class="color-option" onclick="selectColor('#00FF00')">
+              <div class="color-sample" style="background-color: #00FF00;"></div>
+            </div>
+          </div>
+        </div>
       </div>
       <canvas id="imageCanvas"></canvas>
     </div>
@@ -292,6 +368,30 @@
         const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
         errorModal.show();
       }
+
+      // 色選択の関数
+      let selectedColor = '#FF0000';
+      
+      function toggleColorDropdown() {
+        const dropdown = document.getElementById('colorDropdown');
+        dropdown.classList.toggle('show');
+      }
+
+      function selectColor(color) {
+        selectedColor = color;
+        document.getElementById('selectedColorSample').style.backgroundColor = color;
+        document.getElementById('colorDropdown').classList.remove('show');
+      }
+
+      // クリック以外の場所をクリックした時にドロップダウンを閉じる
+      window.addEventListener('click', function(e) {
+        if (!e.target.closest('.color-select-container')) {
+          document.getElementById('colorDropdown').classList.remove('show');
+        }
+      });
+
+      // 初期色を設定
+      document.getElementById('selectedColorSample').style.backgroundColor = selectedColor;
 
       const canvas = document.getElementById('imageCanvas');
       if (canvas) {
@@ -365,7 +465,7 @@
           
           if (isDrawing) {
             // 選択された色で実線を描画
-            ctx.strokeStyle = document.getElementById('boxColorSelect').value;
+            ctx.strokeStyle = selectedColor;
             ctx.lineWidth = 2;
             ctx.setLineDash([]);
             ctx.beginPath();
